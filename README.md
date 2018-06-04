@@ -1,1 +1,1 @@
-# Amazon Sales
+# Sale Notifications

@@ -1,4 +1,4 @@
-package amazonsales;
+package salenotifications;
 
 import org.springframework.web.bind.annotation.RestController;
 
