@@ -11,6 +11,6 @@ public class MainController {
     @RequestMapping(value = "/submit", method = RequestMethod.POST)
     public String submit(@RequestBody String body) {
         System.out.println(body);
-        return "";
+        return "{ \"message\": \"hello from server\" }";
     }
 }
