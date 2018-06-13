@@ -1,1 +1,1 @@
-# Sale Notifications
+# Calendar Digest
