@@ -1,8 +1,14 @@
 package calendardigest;
 
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
+import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.calendar.CalendarScopes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +19,7 @@ import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
 
-public class OAuthManager {
+public final class OAuthManager {
 
     /**
      * Directory to store user credentials
@@ -31,28 +37,49 @@ public class OAuthManager {
      */
     private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR_READONLY);
 
-    private Logger logger;
-    private JsonFactory jsonFactory;
+    private static final Logger LOGGER = LoggerFactory.getLogger(OAuthManager.class);
+    private final JsonFactory jsonFactory;
     private GoogleClientSecrets clientSecrets;
+    private Credential credential;
 
     public OAuthManager() {
-        logger = LoggerFactory.getLogger(OAuthManager.class);
         jsonFactory = JacksonFactory.getDefaultInstance();
         loadClientSecrets();
     }
 
     private void loadClientSecrets() {
-        InputStream inputStream = Application.class.getClassLoader().getResourceAsStream("client_secret.json");
+        final InputStream inputStream = Application.class
+                .getClassLoader()
+                .getResourceAsStream(CLIENT_SECRET_DIR);
         try {
             clientSecrets = GoogleClientSecrets.load(jsonFactory, new InputStreamReader(inputStream));
-            logger.info("Client secrets loaded.");
+            LOGGER.info("Client secrets loaded.");
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to load client secrets.", e);
             System.exit(-1);
         }
     }
 
-    public void test() {
+    public void requestAuthorization(final NetHttpTransport httpTransport) {
+        try {
+            // Build flow and trigger user authorization request.
+            final GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow
+                    .Builder(httpTransport, jsonFactory, clientSecrets, SCOPES)
+                    .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(CREDENTIALS_FOLDER)))
+                    .setAccessType("offline")
+                    .build();
 
+            final LocalServerReceiver localServerReceiver = new LocalServerReceiver();
+            final AuthorizationCodeInstalledApp authorizationCode = new AuthorizationCodeInstalledApp(flow, localServerReceiver);
+            credential = authorizationCode.authorize("testUser");
+            LOGGER.info("testUser" + " authorized.");
+        } catch (IOException e) {
+            LOGGER.error("Failed to request user authorization.", e);
+        }
     }
+
+    public Credential getCredential() {
+        return credential;
+    }
+
 }
