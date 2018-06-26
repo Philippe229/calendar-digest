@@ -5,7 +5,6 @@ import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInsta
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -15,12 +14,10 @@ import com.google.api.services.gmail.GmailScopes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
 
@@ -63,12 +60,7 @@ public final class OAuthManager {
 
     public OAuthManager() {
         jsonFactory = JacksonFactory.getDefaultInstance();
-    }
-
-    @PostConstruct
-    public void init() {
         loadClientSecrets();
-        requestAuthorization();
     }
 
     private void loadClientSecrets() {
@@ -89,21 +81,14 @@ public final class OAuthManager {
         }
     }
 
-    private void requestAuthorization() {
+    void requestAuthorization(final NetHttpTransport HTTP_TRANSPORT) {
         final String userId = "testUser";
-        NetHttpTransport httpTransport = null;
-        try {
-            httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-        } catch (GeneralSecurityException | IOException e) {
-            LOGGER.error("Failed to create HTTP transport.", e);
-            System.exit(-1);
-        }
 
         try {
             // Build flow and trigger user authorization request.
             LOGGER.info("Requesting authorization for calendar.");
             GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow
-                    .Builder(httpTransport, jsonFactory, calendarClientSecrets, CALENDAR_SCOPES)
+                    .Builder(HTTP_TRANSPORT, jsonFactory, calendarClientSecrets, CALENDAR_SCOPES)
                     .setDataStoreFactory(new FileDataStoreFactory(new File(CALENDAR_CREDENTIALS_FOLDER)))
                     .setAccessType("offline")
                     .build();
@@ -113,7 +98,7 @@ public final class OAuthManager {
 
             LOGGER.info("Requesting authorization for Gmail.");
             flow = new GoogleAuthorizationCodeFlow
-                    .Builder(httpTransport, jsonFactory, gmailClientSecrets, GMAIL_SCOPES)
+                    .Builder(HTTP_TRANSPORT, jsonFactory, gmailClientSecrets, GMAIL_SCOPES)
                     .setDataStoreFactory(new FileDataStoreFactory(new File(GMAIL_CREDENTIALS_FOLDER)))
                     .setAccessType("offline")
                     .build();
@@ -124,6 +109,7 @@ public final class OAuthManager {
             LOGGER.info(userId + " authorized.");
         } catch (IOException e) {
             LOGGER.error("Failed to request user authorization.", e);
+            System.exit(-1);
         }
     }
 
