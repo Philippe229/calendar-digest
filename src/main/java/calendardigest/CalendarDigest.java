@@ -20,15 +20,21 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 public final class CalendarDigest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CalendarDigest.class);
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd 'at' h:mm a");
     private final Calendar calendar;
     private final Gmail gmail;
-    private Events events;
+    private Events eventsThisWeek;
+    private Events eventsNextWeek;
+    private Events eventsInTwoWeeks;
 
     public CalendarDigest(final Calendar calendar, final Gmail gmail) {
         this.calendar = calendar;
@@ -36,14 +42,14 @@ public final class CalendarDigest {
     }
 
     void send() {
-        LOGGER.info("Sending email...");
+        LOGGER.info("Creating calendar digest...");
         loadEvents();
         try {
             final URI uri = ClassLoader.getSystemResource("email_credentials.txt").toURI();
             final List<String> lines = Files.readAllLines(Paths.get(uri));
             final String to = lines.get(0);
             final String from = lines.get(1);
-            final String subject = "Next " + events.getItems().size() + " Events";
+            final String subject = "Next " + eventsThisWeek.getItems().size() + " Events";
             final String bodyText = formatBody();
 
             MimeMessage message = createEmail(to, from, subject, bodyText);
@@ -58,17 +64,28 @@ public final class CalendarDigest {
 
     private void loadEvents() {
         LOGGER.info("Fetching events...");
-        final DateTime now = new DateTime(System.currentTimeMillis());
+        final long nowMillis = System.currentTimeMillis();
+        final long oneWeekMillis = TimeUnit.DAYS.toMillis(7);
+        final DateTime now = new DateTime(nowMillis);
+        final DateTime nowNextWeek = new DateTime(nowMillis + oneWeekMillis);
+        final DateTime nowInTwoWeeks = new DateTime(nowMillis + 2 * oneWeekMillis);
+        final DateTime nowInThreeWeeks = new DateTime(nowMillis + 3 * oneWeekMillis);
         try {
-            events = calendar.events().list("primary")
-                    .setMaxResults(10)
-                    .setTimeMin(now)
-                    .setOrderBy("startTime")
-                    .setSingleEvents(true)
-                    .execute();
+            eventsThisWeek = getEventsForInterval(now, nowNextWeek);
+            eventsNextWeek = getEventsForInterval(nowNextWeek, nowInTwoWeeks);
+            eventsInTwoWeeks = getEventsForInterval(nowInTwoWeeks, nowInThreeWeeks);
         } catch (IOException e) {
             LOGGER.error("Failed to load events.", e);
         }
+    }
+
+    private Events getEventsForInterval(DateTime lowerBound, DateTime upperBound) throws IOException {
+        return calendar.events().list("primary")
+                .setTimeMin(lowerBound)
+                .setTimeMax(upperBound)
+                .setOrderBy("startTime")
+                .setSingleEvents(true)
+                .execute();
     }
 
     private MimeMessage createEmail(final String to,
@@ -92,20 +109,35 @@ public final class CalendarDigest {
     }
 
     private String formatBody() {
-        final List<Event> items = events.getItems();
-        if (items.isEmpty()) {
+        if (eventsThisWeek.getItems().isEmpty() && eventsNextWeek.getItems().isEmpty() &&
+                eventsInTwoWeeks.getItems().isEmpty()) {
             return "No upcoming events found.";
         } else {
             final StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("Upcoming events").append(System.lineSeparator());
-            for (final Event event : items) {
-                DateTime start = event.getStart().getDateTime();
-                if (start == null) {
-                    start = event.getStart().getDate();
-                }
-                stringBuilder.append(String.format("%s (%s)\n", event.getSummary(), start));
-            }
+            stringBuilder.append("This week:").append(System.lineSeparator());
+            appendEvents(eventsThisWeek.getItems(), stringBuilder);
+            stringBuilder.append("Next week:").append(System.lineSeparator());
+            appendEvents(eventsNextWeek.getItems(), stringBuilder);
+            stringBuilder.append("In two weeks:").append(System.lineSeparator());
+            appendEvents(eventsInTwoWeeks.getItems(), stringBuilder);
             return stringBuilder.toString();
+        }
+    }
+
+    private void appendEvents(List<Event> items, StringBuilder stringBuilder) {
+        if (items.isEmpty()) {
+            stringBuilder.append("No events").append(System.lineSeparator());
+        } else {
+            for (final Event event : items) {
+                if (event.getStart().getDateTime() != null) {
+                    final long millisStart = event.getStart().getDateTime().getValue();
+                    final String formattedDate = DATE_FORMAT.format(new Date(millisStart));
+                    stringBuilder.append(String.format("%s (%s)\n", event.getSummary(), formattedDate));
+                } else {
+                    stringBuilder.append(String.format("%s (%s)\n", event.getSummary(), event.getStart().getDate()));
+                }
+            }
         }
     }
 
