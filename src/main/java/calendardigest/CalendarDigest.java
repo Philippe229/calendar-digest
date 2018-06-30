@@ -65,15 +65,15 @@ public final class CalendarDigest {
     private void loadEvents() {
         LOGGER.info("Fetching events...");
         final long nowMillis = System.currentTimeMillis();
-        final long oneWeekMillis = TimeUnit.DAYS.toMillis(7);
+        final long oneDayMillis = TimeUnit.DAYS.toMillis(1);
         final DateTime now = new DateTime(nowMillis);
-        final DateTime nowNextWeek = new DateTime(nowMillis + oneWeekMillis);
-        final DateTime nowInTwoWeeks = new DateTime(nowMillis + 2 * oneWeekMillis);
-        final DateTime nowInThreeWeeks = new DateTime(nowMillis + 3 * oneWeekMillis);
+        final DateTime nextMonday = new DateTime(nowMillis + 8 * oneDayMillis);
+        final DateTime mondayInTwoWeeks = new DateTime(nowMillis + 15 * oneDayMillis);
+        final DateTime mondayInThreeWeeks = new DateTime(nowMillis + 22 * oneDayMillis);
         try {
-            eventsThisWeek = getEventsForInterval(now, nowNextWeek);
-            eventsNextWeek = getEventsForInterval(nowNextWeek, nowInTwoWeeks);
-            eventsInTwoWeeks = getEventsForInterval(nowInTwoWeeks, nowInThreeWeeks);
+            eventsThisWeek = getEventsForInterval(now, nextMonday);
+            eventsNextWeek = getEventsForInterval(nextMonday, mondayInTwoWeeks);
+            eventsInTwoWeeks = getEventsForInterval(mondayInTwoWeeks, mondayInThreeWeeks);
         } catch (IOException e) {
             LOGGER.error("Failed to load events.", e);
         }
