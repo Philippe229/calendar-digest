@@ -41,7 +41,7 @@ public class Application {
 
             Trigger trigger = newTrigger()
                     .withIdentity("trigger1", "group1")
-                    .startAt(date)
+                    .startAt(new Date(date.getTime() + TimeUnit.MINUTES.toMillis(15)))
                     .withSchedule(SimpleScheduleBuilder
                             .repeatHourlyForever((int) oneWeekInHours))
                     .build();
