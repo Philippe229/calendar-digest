@@ -1,10 +1,8 @@
 'use strict';
-var app = angular.module('app', []);
-app.controller('home', function homeController($scope, $http) {
-    $scope.submit = function() {
-        var data = { input: $scope.input };
-        $http.post("/submit", data).then(function(res){
-            $scope.message = res.data.message;
-        });
-    }
+var app = angular.module('app', ['ngRoute']);
+app.config(function($routeProvider, $locationProvider) {
+    $locationProvider.html5Mode(true);
+    $routeProvider.when('/', {
+        templateUrl: 'pages/login.html'
+    })
 });
