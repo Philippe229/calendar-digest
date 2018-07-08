@@ -6,9 +6,12 @@
 
 Web application that sends emails about upcoming events.
 
+https://calendardigest.herokuapp.com/
+
 ## Built With
 
-* [Spring framework](https://spring.io/) - The framework used (Spring Boot)
+* [Spring framework](https://spring.io/) - Backend framework used (Spring Boot)
+* [AngularJS](https://angularjs.org/) - Frontend framework used
 * [Maven](https://maven.apache.org/) - Dependency Management
 
 ## License
