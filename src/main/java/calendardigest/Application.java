@@ -42,19 +42,16 @@ public class Application {
             final LocalDate localDate = LocalDate.now();
             final LocalDate sunday = localDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
             final Date dateMontreal = Date.from(sunday.atStartOfDay(zoneId).toInstant());
-            final Date dateUTC = null;
             final Date date = new Date(dateMontreal.getTime() + TimeUnit.MINUTES.toMillis(15));
 
             final long oneWeekInHours = TimeUnit.DAYS.toHours(7);
 
             LOGGER.info("ZoneId: " + zoneId.getId());
-            LOGGER.info("Digest will first be sent on " + sunday.toString());
-            LOGGER.info("Montreal time: " + dateMontreal.toString());
-            LOGGER.info("Digest will be sent at time: " + date.toString());
+            LOGGER.info("Digest will first be sent on " + date.toString());
 
             Trigger trigger = newTrigger()
                     .withIdentity("trigger1", "group1")
-                    .startAt(dateMontreal)
+                    .startAt(date)
                     .withSchedule(SimpleScheduleBuilder
                             .repeatHourlyForever((int) oneWeekInHours))
                     .build();
