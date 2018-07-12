@@ -14,17 +14,17 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public final class CalendarDigest {
 
@@ -39,27 +39,31 @@ public final class CalendarDigest {
     public CalendarDigest(final Calendar calendar, final Gmail gmail) {
         this.calendar = calendar;
         this.gmail = gmail;
+        final InputStream inputStream = getClass().getResourceAsStream("/email_credentials.txt");
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        final List<String> lines = reader.lines().collect(Collectors.toList());
+        for (String line : lines) {
+            System.out.println(line);
+        }
     }
 
     void send() {
         LOGGER.info("Creating calendar digest...");
         loadEvents();
-        try {
-            final URI uri = ClassLoader.getSystemResource("email_credentials.txt").toURI();
-            final List<String> lines = Files.readAllLines(Paths.get(uri));
-            final String to = lines.get(0);
-            final String from = lines.get(1);
-            final String subject = "Next " + eventsThisWeek.getItems().size() + " Events";
-            final String bodyText = formatBody();
+        final InputStream inputStream = getClass().getResourceAsStream("/email_credentials.txt");
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        final List<String> lines = reader.lines().collect(Collectors.toList());
+        final String to = lines.get(0);
+        final String from = lines.get(1);
+        final String subject = "Next " + eventsThisWeek.getItems().size() + " Events";
+        final String bodyText = formatBody();
 
-            MimeMessage message = createEmail(to, from, subject, bodyText);
-            if (message != null) {
-                sendMessage(message);
-                LOGGER.info("Email sent!");
-            }
-        } catch (URISyntaxException | IOException e) {
-            e.printStackTrace();
+        MimeMessage message = createEmail(to, from, subject, bodyText);
+        if (message != null) {
+            sendMessage(message);
+            LOGGER.info("Email sent!");
         }
+
     }
 
     private void loadEvents() {
