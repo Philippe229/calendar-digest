@@ -2,7 +2,7 @@
    <img src="https://github.com/Philippe229/calendar-digest/blob/master/src/main/resources/static/images/logo.jpg" alt="logo" width="300px"/>
 </p>
 
-# Calendar Digest
+# Calendar Digest [![Build Status](https://travis-ci.com/Philippe229/calendar-digest.svg?branch=master)](https://travis-ci.com/Philippe229/calendar-digest)
 
 Web application that sends emails about upcoming events.
 
