@@ -39,12 +39,6 @@ public final class CalendarDigest {
     public CalendarDigest(final Calendar calendar, final Gmail gmail) {
         this.calendar = calendar;
         this.gmail = gmail;
-        final InputStream inputStream = getClass().getResourceAsStream("/email_credentials.txt");
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        final List<String> lines = reader.lines().collect(Collectors.toList());
-        for (String line : lines) {
-            System.out.println(line);
-        }
     }
 
     void send() {
